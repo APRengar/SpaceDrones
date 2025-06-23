@@ -10,10 +10,15 @@ public class ResourceSpawner: MonoBehaviour
     [Header("Resource Settings")]
     [SerializeField] private GameObject resourcePrefab;
     [SerializeField] private int initialResourceCount = 10;
+    [SerializeField] private float spawnInterval = 5f;
+    [SerializeField] private int maxResources = 50;
+
+    private float timer;
 
     private void Start()
     {
         SpawnInitialResources();
+        timer = spawnInterval;
     }
 
     private void SpawnInitialResources()
@@ -21,6 +26,22 @@ public class ResourceSpawner: MonoBehaviour
         for (int i = 0; i < initialResourceCount; i++)
         {
             SpawnSingleResource();
+        }
+    }
+
+    private void Update()
+    {
+        timer -= Time.deltaTime;
+
+        if (timer <= 0f)
+        {
+            timer = spawnInterval;
+
+            int currentResourceCount = FindObjectsOfType<ResourceNode>().Length;
+            if (currentResourceCount < maxResources)
+            {
+                SpawnSingleResource();
+            }
         }
     }
 

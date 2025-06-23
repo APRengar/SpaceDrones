@@ -22,8 +22,15 @@ public class ResourceNode : MonoBehaviour
     private IEnumerator CollectCoroutine(System.Action onCollectedCallback)
     {
         yield return new WaitForSeconds(gatherTime);
-        
+
         onCollectedCallback?.Invoke();
         Destroy(gameObject); // Удаляем ресурс после сбора
+    }
+
+    private void OnDestroy()
+    {
+        StopAllCoroutines(); // на случай, если удалён вручную
+        // Чистим флаги на случай, если кто-то ещё на него ссылался
+        isBeingCollected = false;
     }
 }
