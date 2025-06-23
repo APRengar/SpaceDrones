@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ResourceSpawner: MonoBehaviour
+public class ResourceSpawner : MonoBehaviour
 {
     [Header("Spawning Area")]
     [SerializeField] private BoxCollider spawnArea;
@@ -58,5 +58,10 @@ public class ResourceSpawner: MonoBehaviour
         float y = bounds.center.y; // Предположим, что ресурсы стоят на земле
         float z = Random.Range(bounds.min.z, bounds.max.z);
         return new Vector3(x, y, z);
+    }
+
+    public void SetSpawnInterval(float interval)
+    {
+        spawnInterval = interval;
     }
 }

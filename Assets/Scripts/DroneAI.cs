@@ -10,6 +10,11 @@ public class DroneAI : MonoBehaviour
 
     [SerializeField] private DroneState state = DroneState.Idle;
 
+    [SerializeField] private GameObject carriedResourcePrefab;
+    [SerializeField] private Transform carryPoint;
+
+    private GameObject carriedVisual;
+
     private BaseManager baseManager;
     private Material teamMaterial;
     private NavMeshAgent agent;
@@ -27,6 +32,8 @@ public class DroneAI : MonoBehaviour
 
         ApplyMaterial(mat);
         agent = GetComponent<NavMeshAgent>();
+
+        agent.avoidancePriority = Random.Range(10, 90);
 
         FindNewTarget();
 
@@ -51,7 +58,7 @@ public class DroneAI : MonoBehaviour
     private void Update()
     {
         switch (state)
-        {   
+        {
             case DroneState.Idle:
                 if (currentTarget != null)
                 {
@@ -77,6 +84,11 @@ public class DroneAI : MonoBehaviour
 
             case DroneState.MovingToBase:
                 float distToBase = Vector3.Distance(transform.position, baseManager.transform.position);
+                if (agent.remainingDistance <= agent.stoppingDistance && !agent.pathPending)
+                {
+                    agent.isStopped = true;
+                    break;
+                }
                 if (distToBase <= interactionDistance)
                 {
                     DepositResource();
@@ -108,6 +120,13 @@ public class DroneAI : MonoBehaviour
         agent.isStopped = false;
         hasResource = true;
         currentTarget = null;
+        // ➕ Спавн визуального ресурса
+        if (carriedResourcePrefab != null && carryPoint != null)
+        {
+            carriedVisual = Instantiate(carriedResourcePrefab, carryPoint);
+            carriedVisual.transform.localPosition = Vector3.zero;
+            carriedVisual.transform.localRotation = Quaternion.identity;
+        }
 
         MoveToBase();
     }
@@ -124,6 +143,12 @@ public class DroneAI : MonoBehaviour
 
         hasResource = false;
         baseManager.ReportResourceCollected();
+        // ➖ Удаление визуального ресурса
+        if (carriedVisual != null)
+        {
+            Destroy(carriedVisual);
+            carriedVisual = null;
+        }
 
         FindNewTarget();
     }
@@ -154,5 +179,11 @@ public class DroneAI : MonoBehaviour
         {
             state = DroneState.Idle;
         }
+    }
+    
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, agent.stoppingDistance);
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.UI;
 
 public class UIController : MonoBehaviour
@@ -11,18 +12,32 @@ public class UIController : MonoBehaviour
         public TeamColor team;
         public Slider droneCountSlider;
         public TextMeshProUGUI droneCountText;
+        public TMP_Text resourceText;
     }
 
     [Header("Bases")]
     [SerializeField] private BaseUI[] baseUIs;
     [SerializeField] private BaseManager[] bases;
 
-    [Header("Resource Count Display")]
-    [SerializeField] private TextMeshProUGUI blueTeamText;
-    [SerializeField] private TextMeshProUGUI redTeamText;
+    [SerializeField] private Slider droneSpeedSlider;
+    [SerializeField] private float minSpeed = 1f;
+    [SerializeField] private float maxSpeed = 10f;
+
+    [SerializeField] private TMP_InputField spawnRateInputField;
+    [SerializeField] private ResourceSpawner resourceSpawner;
+
+    // [SerializeField] private Toggle showPathsToggle;
 
     private void Start()
     {
+        droneSpeedSlider.onValueChanged.AddListener(OnDroneSpeedChanged);
+        OnDroneSpeedChanged(droneSpeedSlider.value);
+
+        spawnRateInputField.onEndEdit.AddListener(OnSpawnRateChanged);
+
+        // showPathsToggle.onValueChanged.AddListener(OnShowPathsChanged);
+        // OnShowPathsChanged(showPathsToggle.isOn);
+
         foreach (var ui in baseUIs)
         {
             var baseManager = GetBaseByTeam(ui.team);
@@ -31,6 +46,9 @@ public class UIController : MonoBehaviour
                 ui.droneCountSlider.onValueChanged.AddListener((value) => OnDroneSliderChanged(ui.team, value));
                 ui.droneCountSlider.value = baseManager.Drones.Count;
                 UpdateText(ui, (int)ui.droneCountSlider.value);
+
+                baseManager.OnResourceChanged += (_) => UpdateResourceText(ui, baseManager.CollectedResources);
+                UpdateResourceText(ui, baseManager.CollectedResources);
             }
         }
     }
@@ -75,19 +93,54 @@ public class UIController : MonoBehaviour
         return team == TeamColor.Blue ? Color.blue : Color.red;
     }
 
-    private IEnumerator UpdateResourceCounts()
+    private void UpdateResourceText(BaseUI ui, int amount)
     {
-        while (true)
-        {
-            foreach (var b in bases)
-            {
-                if (b.TeamColorValue == Color.blue)
-                    blueTeamText.text = $"Blue: {b.CollectedResources}";
-                else if (b.TeamColorValue == Color.red)
-                    redTeamText.text = $"Red: {b.CollectedResources}";
-            }
+        if (ui.resourceText != null)
+            ui.resourceText.text = $"{amount}";
+    }
 
-            yield return new WaitForSeconds(0.25f);
+    private void OnDroneSpeedChanged(float value)
+    {
+        float speed = Mathf.Lerp(minSpeed, maxSpeed, value);
+
+        foreach (var baseManager in FindObjectsOfType<BaseManager>())
+        {
+            foreach (var drone in baseManager.Drones)
+            {
+                var agent = drone.GetComponent<NavMeshAgent>();
+                if (agent != null)
+                    agent.speed = speed;
+            }
         }
     }
+
+    private void OnSpawnRateChanged(string value)
+    {
+        if (float.TryParse(value, out float spawnInterval) && spawnInterval > 0)
+        {
+            resourceSpawner.SetSpawnInterval(spawnInterval);
+        }
+    }
+
+    
+    // private void OnShowPathsChanged(bool isOn)
+    // {
+    //     foreach (var baseManager in FindObjectsOfType<BaseManager>())
+    //     {
+    //         foreach (var drone in baseManager.Drones)
+    //         {
+    //             var agent = drone.GetComponent<NavMeshAgent>();
+    //             if (agent != null)
+    //                 // agent.isPathStale = false;
+    //                 agent.updatePosition = true;
+    //                 agent.updateRotation = true;
+
+    // #if UNITY_EDITOR
+    //             UnityEditor.EditorUtility.SetSelectedRenderState(agent.GetComponent<Renderer>(), isOn 
+    //                 ? UnityEditor.EditorSelectedRenderState.Wireframe 
+    //                 : UnityEditor.EditorSelectedRenderState.Hidden);
+    // #endif
+    //         }
+    //     }
+    // }
 }

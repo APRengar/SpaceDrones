@@ -28,8 +28,10 @@ public class BaseManager : MonoBehaviour
 
     public IReadOnlyList<GameObject> Drones => drones;
 
+    [Header("Resources")]
     private int collectedResources = 0;
     public int CollectedResources => collectedResources;
+    public event System.Action<BaseManager> OnResourceChanged;
 
     private void Start()
     {
@@ -131,6 +133,7 @@ public class BaseManager : MonoBehaviour
     public void ReportResourceCollected()
     {
         collectedResources++;
+        OnResourceChanged?.Invoke(this);
     }
 }
 
